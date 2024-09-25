@@ -1,0 +1,2 @@
+# vim-run-command
+vimrc
