@@ -1,5 +1,8 @@
 let g:netrw_dirhistmax  =10
-let g:netrw_dirhistcnt =6
+let g:netrw_dirhistcnt =9
+let g:netrw_dirhist_9='/home/yhj/linux_utilization/shell/Number_Theory/Linear_Diophantine_Equation'
+let g:netrw_dirhist_8='/home/yhj/Calculus'
+let g:netrw_dirhist_7='/home/yhj/Calculus/Maclurin_Series/.git'
 let g:netrw_dirhist_6='/home/yhj/advanced_programming/week_1'
 let g:netrw_dirhist_5='/home/yhj/.vim/colors'
 let g:netrw_dirhist_4='/home/yhj/NumberTheory'
@@ -7,6 +10,3 @@ let g:netrw_dirhist_3='/mnt/c/Users/hongj/Desktop/5to3/auth'
 let g:netrw_dirhist_2='/home/yhj/linux_utilization/directory_and_file'
 let g:netrw_dirhist_1='/home/yhj/linux_utilization'
 let g:netrw_dirhist_0='/home/yhj/elementary_programming'
-let g:netrw_dirhist_9='/home/yhj'
-let g:netrw_dirhist_8='/home/yhj/comeng'
-let g:netrw_dirhist_7='/home/yhj/comeng/__pycache__'
