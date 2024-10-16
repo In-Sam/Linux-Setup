@@ -104,6 +104,7 @@ alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo
 alias c='clear'
 alias g='gcc -o'
 alias s='source'
+alias b='cd -'
 
 if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
