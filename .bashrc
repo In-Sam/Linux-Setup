@@ -106,11 +106,11 @@ alias g='gcc -o'
 alias s='source'
 alias b='cd -'
 
-alias ga='git add .'
 function gc() {
+	git add .
 	git commit -m "$1"
+	git push
 }
-alias gp='git push'
 
 if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases
