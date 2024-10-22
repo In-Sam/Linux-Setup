@@ -127,11 +127,14 @@ if ! shopt -oq posix; then
   fi
 fi
 PATH=$PATH:.
-# Install Ruby Gems to ~/gems
-export GEM_HOME="$HOME/gems"
-export PATH="$HOME/gems/bin:$PATH"
 
-function mkcd() {
-  mkdir -p "$1"
+function mkdir() {
+  /usr/bin/mkdir -p "$1"
   cd "$1"
+}
+
+function cd() {
+	builtin cd "$1"
+	pwd
+	l
 }
