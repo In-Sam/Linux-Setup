@@ -90,7 +90,7 @@ fi
 # some more ls aliases
 alias ll='ls -alF'
 alias la='ls -A'
-alias l='ls -CF'
+alias l='ls -Alf --color=auto'
 
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
@@ -105,6 +105,12 @@ alias c='clear'
 alias g='gcc -o'
 alias s='source'
 alias b='cd -'
+
+alias ga='git add .'
+function gc() {
+	git commit -m "$1"
+}
+alias gp='git push'
 
 if [ -f ~/.bash_aliases ]; then
     . ~/.bash_aliases

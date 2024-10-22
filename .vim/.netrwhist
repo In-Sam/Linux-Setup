@@ -1,5 +1,7 @@
 let g:netrw_dirhistmax  =10
-let g:netrw_dirhistcnt =3
+let g:netrw_dirhistcnt =5
+let g:netrw_dirhist_5='/home/yhj/Number_Theory'
+let g:netrw_dirhist_4='/home/yhj/advanced_programming/week_6'
 let g:netrw_dirhist_3='/home/yhj/Number_Theory/.git'
 let g:netrw_dirhist_2='/home/yhj/Number_Theory'
 let g:netrw_dirhist_1='/proc/971'
@@ -8,5 +10,3 @@ let g:netrw_dirhist_9='/home/yhj/linux_utilization/shell/Number_Theory/Linear_Di
 let g:netrw_dirhist_8='/home/yhj/Calculus'
 let g:netrw_dirhist_7='/home/yhj/Calculus/Maclurin_Series/.git'
 let g:netrw_dirhist_6='/home/yhj/advanced_programming/week_1'
-let g:netrw_dirhist_5='/home/yhj/.vim/colors'
-let g:netrw_dirhist_4='/home/yhj/NumberTheory'
