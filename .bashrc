@@ -180,3 +180,5 @@ function _ls {
 	fi
 
 }
+
+alias sl="_ls"
