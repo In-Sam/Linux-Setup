@@ -138,3 +138,45 @@ function cd() {
 	pwd
 	l
 }
+
+
+function _reculsiveLs {
+	local directory=$1
+	local -i depth=$2
+
+	local files="$(/usr/bin/ls -l $directory)"
+	local -i number=0
+	local TabArray=""
+	for (( i=0; i<depth; i++ ))
+	do
+		TabArray="$TabArray    "
+	done
+	while :
+	do
+		local fileTypeAndPermission="$(echo $files | cut -d$' ' -f $((3+$number*9)))"
+		local name="$(echo $files | cut -d$' ' -f $((11+$number*9)))"
+
+		if [[ $name == "" ]]; then
+			break
+		fi
+
+		if [[ ${fileTypeAndPermission:0:1} == "d" ]]; then
+			echo "|${TabArray}${name}"
+			_reculsiveLs "$directory/$name" $(($depth+1)) $maxDepth
+		else
+			echo "|${TabArray}${name}"
+		fi
+
+
+		((number++))
+	done
+}
+
+function _ls {
+	if [[ $1 == "" ]]; then
+		_reculsiveLs . 0
+	else
+		_reculsiveLs $1 0
+	fi
+
+}
