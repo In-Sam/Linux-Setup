@@ -141,44 +141,95 @@ function cd() {
 
 
 function _reculsiveLs {
-	local directory=$1
+	local pwd=$1
 	local -i depth=$2
 
-	local files="$(/usr/bin/ls -l $directory)"
-	local -i number=0
-	local TabArray=""
+	local TabArray="|"
 	for (( i=0; i<depth; i++ ))
 	do
-		TabArray="$TabArray    "
+		TabArray="$TabArray    |"
 	done
-	while :
-	do
-		local fileTypeAndPermission="$(echo $files | cut -d$' ' -f $((3+$number*9)))"
-		local name="$(echo $files | cut -d$' ' -f $((11+$number*9)))"
 
-		if [[ $name == "" ]]; then
+	newline=$'\n'
+	local files="$(printf '%s' "$(/usr/bin/ls -l $pwd)" | sort --ignore-case)"
+
+	local generals="" # general files without directories
+	local directories=""
+
+
+	for element in $files:
+	do
+		if [[ ${element:0:1} == "-" ]]; then
+			generals="$generals$newline$(echo $element | rev | cut -d$' ' -f 1 | rev)"
+		elif [[ ${element:0:1} == "d" ]]; then
+			directories="$directories$newline$(echo $element | rev | cut -d$' ' -f 1 | rev)"
+		else
 			break
 		fi
-
-		if [[ ${fileTypeAndPermission:0:1} == "d" ]]; then
-			echo "|${TabArray}${name}"
-			_reculsiveLs "$directory/$name" $(($depth+1)) $maxDepth
-		else
-			echo "|${TabArray}${name}"
-		fi
-
-
-		((number++))
 	done
+	
+	generals="$(printf '%s' "$generals" | sort --ignore-case)"
+
+	local -i count=0
+	local -i CGF=-1 # Count of General Files ( -1 )
+	for file in $generals:
+	do
+		CGF=$(($CGF+1))
+	done
+	if [[ $generals != "" ]]; then
+		for file in $generals:
+		do
+			if [ $count != $CGF ]; then
+				echo "$TabArray$file"
+			fi
+			count=$(($count+1))
+		done
+		file=$(echo $file | rev)
+		file=${file:1}
+		file=$(echo $file | rev)
+		echo "$TabArray$file"
+	fi
+
+	directories="$(printf '%s' "$directories" | sort --ignore-case)"
+
+	
+	local -i CD=-1 # Count of Directories ( -1 )
+
+	for directory in $directories:
+	do
+		CD=$(($CD+1))
+	done
+
+	count=0
+
+	if [[ $directories == "" ]]; then
+		return
+	fi
+
+	for directory in $directories:
+	do
+		if [ $count != $CD ]; then
+			echo "$TabArray$directory"
+			_reculsiveLs "$pwd/$directory" $(($depth + 1))
+		fi
+		count=$(($count+1))
+	done
+	directory=$(echo $directory | rev)
+	directory=${directory:1}
+	directory=$(echo $directory | rev)
+	echo "$TabArray$directory"
+	_reculsiveLs "$pwd/$directory" $(($depth + 1))
+	
 }
 
 function _ls {
+	IFS=$'\n'
 	if [[ $1 == "" ]]; then
 		_reculsiveLs . 0
 	else
 		_reculsiveLs $1 0
 	fi
-
+	IFS=$' '
 }
 
 alias sl="_ls"
