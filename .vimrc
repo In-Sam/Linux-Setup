@@ -10,5 +10,9 @@ if has("syntax")
 endif
 
 nnoremap q <c-v>
+nnoremap j h
+nnoremap k j
+nnoremap l k
+nnoremap ; l
 
 colorscheme jellybeans

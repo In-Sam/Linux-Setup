@@ -2,6 +2,7 @@
 # see /usr/share/doc/bash/examples/startup-files (in the package bash-doc)
 # for examples
 
+newline=$'\n' # shit
 # If not running interactively, don't do anything
 case $- in
     *i*) ;;
@@ -108,7 +109,7 @@ alias b='cd -'
 
 function gc() {
 	git add .
-	git commit -m "$1"
+	git commit -m "$@"
 	git push
 }
 
@@ -141,22 +142,21 @@ function cd() {
 
 
 function _reculsiveLs {
-	local pwd=$1
-	local -i depth=$2
+	local pwd=$1 # the name of working directory
+	local -i depth=$2 # how much is this far from origin directory
 
-	local TabArray="|"
+	local TabArray="|" # visualizing depth
 	for (( i=0; i<depth; i++ ))
 	do
 		TabArray="$TabArray    |"
 	done
 
-	newline=$'\n'
-	local files="$(printf '%s' "$(/usr/bin/ls -l $pwd)" | sort --ignore-case)"
+	local files="$(printf '%s' "$(/usr/bin/ls -l $pwd)" | sort --ignore-case)" # auto sorted
 
-	local generals="" # general files without directories
+	local generals="" # general files without directories in this directory
 	local directories=""
 
-
+	# classifing an object into 2 types-general file & directory
 	for element in $files:
 	do
 		if [[ ${element:0:1} == "-" ]]; then
@@ -168,47 +168,48 @@ function _reculsiveLs {
 		fi
 	done
 	
-	generals="$(printf '%s' "$generals" | sort --ignore-case)"
+	generals="$(printf '%s' "$generals" | sort --ignore-case)" # sort
 
 	local -i count=0
-	local -i CGF=-1 # Count of General Files ( -1 )
+	local -i NGF=-1 # the Number of General Files ( -1 )
 	for file in $generals:
 	do
-		CGF=$(($CGF+1))
+		NGF=$(($NGF+1)) # counting the number of general files
 	done
-	if [[ $generals != "" ]]; then
+	if [[ $generals != "" ]]; then # Are there at least one general file
 		for file in $generals:
 		do
-			if [ $count != $CGF ]; then
+			if [ $count != $NGF ]; then
 				echo "$TabArray$file"
 			fi
 			count=$(($count+1))
 		done
+		#
 		file=$(echo $file | rev)
 		file=${file:1}
 		file=$(echo $file | rev)
 		echo "$TabArray$file"
 	fi
 
-	directories="$(printf '%s' "$directories" | sort --ignore-case)"
+	directories="$(printf '%s' "$directories" | sort --ignore-case)" # sort
 
 	
-	local -i CD=-1 # Count of Directories ( -1 )
+	local -i ND=-1 # the Number of Directories ( -1 )
 
 	for directory in $directories:
 	do
-		CD=$(($CD+1))
+		ND=$(($ND+1)) # counting the number of directories
 	done
 
-	count=0
+	count=0 # re use
 
-	if [[ $directories == "" ]]; then
+	if [[ $directories == "" ]]; then # there is no directory in $pwd
 		return
 	fi
 
 	for directory in $directories:
 	do
-		if [ $count != $CD ]; then
+		if [ $count != $ND ]; then
 			echo "$TabArray$directory"
 			_reculsiveLs "$pwd/$directory" $(($depth + 1))
 		fi
@@ -233,3 +234,38 @@ function _ls {
 }
 
 alias sl="_ls"
+
+function SG {
+	IFS=$'\n'
+	local magic_file_name="$1.mg"
+	
+	if [ ! -e $magic_file_name ]; then
+		echo "Which files are source files? (Maybe its name ends with .c extension but, for convenience when coding, please subtract the extension) And split by newline."
+		touch $magic_file_name
+		cat > $magic_file_name
+	fi
+	
+	local magic_file="$(cat $magic_file_name)"
+	local object_files=""
+	local -c holy_shit=0 # bash SHITS ':' in last for-loop ;;
+
+	for sf in $magic_file:
+	do
+		holy_shit=$(($holy_shit+1))
+	done
+	local -c loop_index=0
+	for source_file in $magic_file: # it includes all source files will be forming an excutable file.
+	do
+		if [ $(($loop_index+1)) == $holy_shit ]; then
+			source_file=$(echo $source_file | rev)
+			source_file=${source_file:1}
+			source_file=$(echo $source_file | rev)
+		fi
+		gcc -c "$source_file.c"
+		object_files="$source_file.o$newline$object_files"
+		loop_index=$(($loop_index+1))
+	done
+	
+	gcc -o $1 $object_files # == gcc -o $1 $object_files
+	IFS=$' '
+}
