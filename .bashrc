@@ -281,7 +281,8 @@ function EC { # Extract comments from source code ( C code )
 
 	local code="$(cat $file)"
 	local -c stillInComment=0 # Status refers that the line is in /**/
-	for line in $code:
+#for line in $code:
+	while read line;
 	do
 		lineNumber=$(($lineNumber+1))
 		if [ $stillInComment == 0 ]; then
@@ -367,7 +368,7 @@ function EC { # Extract comments from source code ( C code )
 				stillInComment=0
 			fi
 		fi
-	done
+	done < $file
 	file=$(echo $file | rev)
 	file=${file:2} # subtract .c
 	file=$(echo $file | rev)
