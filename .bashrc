@@ -269,3 +269,111 @@ function SG {
 	gcc -o $1 $object_files # == gcc -o $1 $object_files
 	IFS=$' '
 }
+
+function EC { # Extract comments from source code ( C code )
+	IFS=$'\n'
+	local file="$1"
+	local extractedFile=""
+	local -c lineNumber=0;
+	if [ ! -e $file ]; then
+		echo "There doesn't exist such file!"
+	fi
+
+	local code="$(cat $file)"
+	local -c stillInComment=0 # Status refers that the line is in /**/
+	for line in $code:
+	do
+		lineNumber=$(($lineNumber+1))
+		if [ $stillInComment == 0 ]; then
+			# processing for /**/
+			local -c loop_index=0
+			splitAtSlashWithStar="!!!!${line//$'/*'/$newline}"
+			local -c holy_shit=0 # bash SHITS ':' in last for-loop ;;
+		
+			for seperatedString in $splitAtSlashWithStar:
+			do
+				holy_shit=$(($holy_shit+1))
+			done
+			
+			if [ $holy_shit != 1 ] ; then
+				extractedFile="$extractedFile$lineNumber "
+				for seperatedString in $splitAtSlashWithStar:
+				do
+					if [ $(($loop_index+1)) == $holy_shit ]; then
+						seperatedString=$(echo $seperatedString | rev)
+						seperatedString=${seperatedString:1}
+						seperatedString=$(echo $seperatedString | rev)
+					fi
+					if [ $loop_index != 0 ]; then
+						extractedFile="$extractedFile/*$seperatedString"
+					fi
+					loop_index=$(($loop_index+1))
+				done
+				extractedFile="$extractedFile$newline"
+
+				splitAtStarWithSlash="${line//'*/'/$newline}"
+				holy_shit=0 # bash SHITS ':' in last for-loop ;;
+			
+				for seperatedString in $splitAtStarWithSlash:
+				do
+					holy_shit=$(($holy_shit+1))
+				done
+				
+				if [ $holy_shit == 1 ]; then
+					stillInComment=1
+				fi
+			fi
+			# processing for //
+			loop_index=0
+			splitAtDoubleSlash="${line//$'//'/$newline}"
+			holy_shit=0 # bash SHITS ':' in last for-loop ;;
+		
+			for seperatedString in $splitAtDoubleSlash:
+			do
+				holy_shit=$(($holy_shit+1))
+			done
+			
+			if [[ ${line:0:1} = "/" && ${line:1:1} = "/" ]]; then # fucking bash
+				extractedFile="$extractedFile$lineNumber "
+				extractedFile="$extractedFile$line$newline"
+			elif [ $holy_shit != 1 ]; then
+				extractedFile="$extractedFile$lineNumber "
+				for seperatedString in $splitAtDoubleSlash:
+				do
+					if [ $(($loop_index+1)) == $holy_shit ]; then
+						seperatedString=$(echo $seperatedString | rev)
+						seperatedString=${seperatedString:1}
+						seperatedString=$(echo $seperatedString | rev)
+					fi
+					if [ $loop_index != 0 ]; then
+						extractedFile="$extractedFile//$seperatedString"
+					fi
+					loop_index=$(($loop_index+1))
+				done
+				extractedFile="$extractedFile$newline"
+			fi
+		else # this line is surrounded by /* and */
+			extractedFile="$extractedFile$lineNumber "
+			extractedFile="$extractedFile$line$newline"
+			splitAtStarWithSlash="${line//$'*/'/$newline}"
+			holy_shit=0 # bash SHITS ':' in last for-loop ;;
+		
+			for seperatedString in $splitAtStarWithSlash:
+			do
+				holy_shit=$(($holy_shit+1))
+			done
+			
+			if [ $holy_shit != 1 ]; then
+				stillInComment=0
+			fi
+		fi
+	done
+	file=$(echo $file | rev)
+	file=${file:2} # subtract .c
+	file=$(echo $file | rev)
+
+	echo "$extractedFile" > "$file.comments"
+	echo "$extractedFile"
+
+	IFS=' '
+}
