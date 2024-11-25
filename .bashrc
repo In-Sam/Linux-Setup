@@ -274,6 +274,7 @@ function EC { # Extract comments from source code ( C code )
 	IFS=$'\n'
 	local file="$1"
 	local extractedFile=""
+	local extension
 	local -c lineNumber=0;
 	if [ ! -e $file ]; then
 		echo "There doesn't exist such file!"
@@ -288,7 +289,7 @@ function EC { # Extract comments from source code ( C code )
 		if [ $stillInComment == 0 ]; then
 			# processing for /**/
 			local -c loop_index=0
-			splitAtSlashWithStar="!!!!${line//$'/*'/$newline}"
+			splitAtSlashWithStar="${line//$'/*'/$newline}"
 			local -c holy_shit=0 # bash SHITS ':' in last for-loop ;;
 		
 			for seperatedString in $splitAtSlashWithStar:
@@ -296,7 +297,7 @@ function EC { # Extract comments from source code ( C code )
 				holy_shit=$(($holy_shit+1))
 			done
 			
-			if [ $holy_shit != 1 ] ; then
+			if [ $holy_shit != 1 ] || [[ ${line:0:1} = "/" && ${line:1:1} = "*" ]] then # fucking bash
 				extractedFile="$extractedFile$lineNumber "
 				for seperatedString in $splitAtSlashWithStar:
 				do
@@ -336,7 +337,7 @@ function EC { # Extract comments from source code ( C code )
 			
 			if [[ ${line:0:1} = "/" && ${line:1:1} = "/" ]]; then # fucking bash
 				extractedFile="$extractedFile$lineNumber "
-				extractedFile="$extractedFile$line$newline"
+				extractedFile="$extractedFile${line:2}$newline"
 			elif [ $holy_shit != 1 ]; then
 				extractedFile="$extractedFile$lineNumber "
 				for seperatedString in $splitAtDoubleSlash:
@@ -369,12 +370,126 @@ function EC { # Extract comments from source code ( C code )
 			fi
 		fi
 	done < $file
+	extension=$(echo $file | rev)
+	extension=$(echo $extension | cut -d '.' -f 1)
+	extension=$(echo $extension | rev)
+	
+	echo "extension : $extension"
 	file=$(echo $file | rev)
-	file=${file:2} # subtract .c
+	file=${file:${#extension}} # subtract extension
 	file=$(echo $file | rev)
+	file="subtracted_$(echo $file)$extension"
+	echo "$subtractedFile" > "$file"
+	echo "$subtractedFile"
 
-	echo "$extractedFile" > "$file.comments"
-	echo "$extractedFile"
+	IFS=' '
+}
+function SC { # Subtract comments from source code ( C code )
+	IFS=$'\n'
+	local file="$1"
+	local subtractedFile=""
+	local lineExcludingComments
+	local extension
+	local -c lineNumber=0;
+	if [ ! -e $file ]; then
+		echo "There doesn't exist such file!"
+	fi
 
+	local code="$(cat $file)"
+	local -c stillInComment=0 # Status refers that the line is in /**/
+#for line in $code:
+	while read line;
+	do
+		lineNumber=$(($lineNumber+1))
+		if [ $stillInComment == 0 ]; then
+			# processing for /**/
+			local -c loop_index=0
+			splitAtSlashWithStar="${line//$'/*'/$newline}"
+			local -c holy_shit=0 # bash SHITS ':' in last for-loop ;;
+		
+			for seperatedString in $splitAtSlashWithStar:
+			do
+				if [ $holy_shit == 0 ]; then
+					lineExcludingComments=$seperatedString
+				fi
+				holy_shit=$(($holy_shit+1))
+			done
+			
+			if [ $holy_shit != 1 ]; then
+				subtractedFile="$subtractedFile$lineExcludingComments$newline"
+
+				splitAtStarWithSlash="${line//'*/'/$newline}"
+				holy_shit=0 # bash SHITS ':' in last for-loop ;;
+			
+				for seperatedString in $splitAtStarWithSlash:
+				do
+					holy_shit=$(($holy_shit+1))
+				done
+				
+				if [ $holy_shit == 1 ]; then
+					stillInComment=1
+				fi
+			elif [[ ${line:0:1} = "/" && ${line:1:1} = "*" ]]; then
+				splitAtStarWithSlash="${line//'*/'/$newline}"
+				holy_shit=0 # bash SHITS ':' in last for-loop ;;
+			
+				for seperatedString in $splitAtStarWithSlash:
+				do
+					holy_shit=$(($holy_shit+1))
+				done
+				
+				if [ $holy_shit == 1 ]; then
+					stillInComment=1
+				fi
+				
+			else
+				# processing for //
+				loop_index=0
+				splitAtDoubleSlash="${line//$'//'/$newline}"
+				holy_shit=0 # bash SHITS ':' in last for-loop ;;
+			
+				for seperatedString in $splitAtDoubleSlash:
+				do
+					if [ $holy_shit == 0 ]; then
+						lineExcludingComments=$seperatedString
+					fi
+					holy_shit=$(($holy_shit+1))
+				done
+				if [[ ${line:0:1} = "/" && ${line:1:1} = "/" ]]; then # fucking bash
+					continue
+				elif [ $holy_shit == 1 ]; then
+					lineExcludingComments=$(echo $lineExcludingComments | rev)
+					lineExcludingComments=${lineExcludingComments:1}
+					lineExcludingComments=$(echo $lineExcludingComments | rev)
+				fi
+				subtractedFile="$subtractedFile$lineExcludingComments$newline"
+			fi
+		else # this line is surrounded by /* and */
+			splitAtStarWithSlash="${line//$'*/'/$newline}"
+			holy_shit=0 # bash SHITS ':' in last for-loop ;;
+		
+			for seperatedString in $splitAtStarWithSlash:
+			do
+				holy_shit=$(($holy_shit+1))
+			done
+			
+			if [ $holy_shit != 1 ]; then
+				echo "exited surrounded section : $line"
+				stillInComment=0
+			fi
+		fi
+	done < $file
+
+	extension=$(echo $file | rev)
+	extension=$(echo $extension | cut -d '.' -f 1)
+	extension=$(echo $extension | rev)
+	
+	echo "extension : $extension"
+	file=$(echo $file | rev)
+	file=${file:${#extension}} # subtract extension
+	file=$(echo $file | rev)
+	file="subtracted_$(echo $file)$extension"
+	echo "$subtractedFile" > "$file"
+	echo "$subtractedFile"
 	IFS=' '
 }
