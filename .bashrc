@@ -143,13 +143,16 @@ function cd() {
 
 function _reculsiveLs {
 	local pwd=$1 # the name of working directory
-	local -i depth=$2 # how much is this far from origin directory
+	local inherited_string=$2 # visualizing depth
+	local -i last_file=$3
 
-	local TabArray="|" # visualizing depth
-	for (( i=0; i<depth; i++ ))
-	do
-		TabArray="$TabArray    |"
-	done
+	local TabArray
+	if [ $last_file == 1 ]; then
+		TabArray="$inherited_string└── "
+	else
+		TabArray="$inherited_string├── "
+	fi
+
 
 	local files="$(printf '%s' "$(/usr/bin/ls -l $pwd)" | sort --ignore-case)" # auto sorted
 
@@ -211,7 +214,7 @@ function _reculsiveLs {
 	do
 		if [ $count != $ND ]; then
 			echo "$TabArray$directory"
-			_reculsiveLs "$pwd/$directory" $(($depth + 1))
+			_reculsiveLs "$pwd/$directory" "$inherited_string    " 0
 		fi
 		count=$(($count+1))
 	done
@@ -219,16 +222,16 @@ function _reculsiveLs {
 	directory=${directory:1}
 	directory=$(echo $directory | rev)
 	echo "$TabArray$directory"
-	_reculsiveLs "$pwd/$directory" $(($depth + 1))
+	_reculsiveLs "$pwd/$directory" "$inheriting│   " 1
 	
 }
 
 function _ls {
 	IFS=$'\n'
 	if [[ $1 == "" ]]; then
-		_reculsiveLs . 0
+		_reculsiveLs .  ""  0 
 	else
-		_reculsiveLs $1 0
+		_reculsiveLs $1  ""  0 
 	fi
 	IFS=$' '
 }
@@ -492,4 +495,23 @@ function SC { # Subtract comments from source code ( C code )
 	echo "$subtractedFile" > "$file"
 	echo "$subtractedFile"
 	IFS=' '
+}
+
+function _backup() {
+	local source_dir=$1
+	local destination_dir=$2
+
+	timestamp=$(date +%Y%m%d%H%M%S)
+
+	tar -czf "$destination_dir/backup_$timestamp.tar.gz" "$source_dir"
+}
+
+function _sysinfo() {
+	local cpu_usage=$(top -bn1 | awk 'NR==3 {print $2}')
+	local memory_usage=$(free -m | awk 'NR==2{printf "%.2f%%", $3*100/$2}')
+	local disk_usage=$(df -h / | awk 'NR==2{print $5}')
+
+	echo "CPU Usage: $cpu_usage"
+	echo "Memory Usage: $memory_usage"
+	echo "Disk Usage: $disk_usage"
 }

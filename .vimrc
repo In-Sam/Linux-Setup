@@ -15,4 +15,4 @@ nnoremap k j
 nnoremap l k
 nnoremap ; l
 
-colorscheme jellybeans
+colorscheme PaperColor

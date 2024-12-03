@@ -1,5 +1,6 @@
 let g:netrw_dirhistmax  =10
-let g:netrw_dirhistcnt =9
+let g:netrw_dirhistcnt =0
+let g:netrw_dirhist_0='/root/.vim'
 let g:netrw_dirhist_9='/root/project'
 let g:netrw_dirhist_8='/boot'
 let g:netrw_dirhist_7='/root/.vim'
@@ -9,4 +10,3 @@ let g:netrw_dirhist_4='/root/advanced_programming/project'
 let g:netrw_dirhist_3='/home/yhj/Number_Theory/z'
 let g:netrw_dirhist_2='/home/yhj/Number_Theory/Linear_Diophantine_Equation'
 let g:netrw_dirhist_1='/home/yhj/Number_Theory/Fermat_Little_Theorem'
-let g:netrw_dirhist_0='/home/yhj/Number_Theory/Linear_Diophantine_Equation'
