@@ -15,4 +15,5 @@ nnoremap k j
 nnoremap l k
 nnoremap ; l
 
-colorscheme PaperColor
+"colorscheme PaperColor
+colorscheme burgundy
