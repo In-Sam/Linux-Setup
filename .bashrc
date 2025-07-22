@@ -58,7 +58,7 @@ if [ -n "$force_color_prompt" ]; then
 fi
 
 if [ "$color_prompt" = yes ]; then
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\][\t] \u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\][\t] \u@\h\[\033[00m\]:\[\033[01;36m\]\w\[\033[00m\]\$ '
 else
     PS1='${debian_chroot:+($debian_chroot)}[\t] \u@\h:\w\$ '
 fi
@@ -87,6 +87,8 @@ fi
 
 # colored GCC warnings and errors
 #export GCC_COLORS='error=01;31:warning=01;35:note=01;36:caret=01;32:locus=01:quote=01'
+export COLOR_CYAN='\e[1;36m'
+export COLOR_BLUE='\e[1;34m'
 
 # some more ls aliases
 alias ll='ls -alF'
@@ -103,9 +105,12 @@ alias alert='notify-send --urgency=low -i "$([ $? = 0 ] && echo terminal || echo
 # See /usr/share/doc/bash-doc/examples in the bash-doc package.
 
 alias c='clear'
-alias g='gcc -o'
+#alias g='gcc -o'
+#alias gp='g++ -o'
 alias s='source'
 alias b='cd -'
+alias p='pwndbg'
+LS_COLORS=$LS_COLORS:'di=1;36:'
 
 function gc() {
 	git add .
@@ -128,6 +133,13 @@ if ! shopt -oq posix; then
   fi
 fi
 PATH=$PATH:.
+
+function g() {
+	gcc -o $1 $1.c
+}
+function gp() {
+	g++ -o $1 $1.cpp
+}
 
 function mkdir() {
   /usr/bin/mkdir -p "$1"
