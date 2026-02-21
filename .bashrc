@@ -546,6 +546,47 @@ function cats {
     done
 }
 
-function 		
+findsym() {
+    local search_path=".."
+    local symbol=""
 
+    if [[ $# -eq 1 ]]; then
+        symbol="$1"
+    elif [[ $# -ge 2 ]]; then
+        search_path="$1"
+        symbol="$2"
+    else
+        echo "사용법: findsym [검색경로] <심볼이름>"
+        echo "예: findsym .. httpcon_auth"
+        echo "예: findsym httpcon_auth   (기본 검색경로: ..)"
+        return 1
+    fi
+
+    find "$search_path" -type f -name "*.so*" -print0 2>/dev/null \
+    | while IFS= read -r -d '' f; do
+        nm -D "$f" 2>/dev/null | grep -qw -- "$symbol" && echo "$f"
+      done
+}
 alias dz='rm *.Identifier'
+check_needed() {
+    local file="$1"
+
+    if [[ -z "$file" ]]; then
+        echo "사용법: check_needed <파일>"
+        return 1
+    fi
+
+    readelf -d "$file" 2>/dev/null | grep NEEDED
+}
+
+check_symbol() {
+    local file="$1"
+    local symbol="$2"
+
+    if [[ -z "$file" || -z "$symbol" ]]; then
+        echo "사용법: check_symbol <파일> <심볼이름>"
+        return 1
+    fi
+
+    readelf -Ws "$file" 2>/dev/null | grep -w -- "$symbol"
+}
