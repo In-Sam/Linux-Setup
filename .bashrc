@@ -249,6 +249,7 @@ function _ls {
 }
 
 alias sl="_ls"
+alias GPUstat="watch -d -n 0.5 nvidia-smi"
 
 function SG {
 	IFS=$'\n'
@@ -312,7 +313,7 @@ function EC { # Extract comments from source code ( C code )
 				holy_shit=$(($holy_shit+1))
 			done
 			
-			if [ $holy_shit != 1 ] || [[ ${line:0:1} = "/" && ${line:1:1} = "*" ]] then # fucking bash
+			if [ $holy_shit != 1 ] || [[ ${line:0:1} = "/" && ${line:1:1} = "*" ]]; then # fucking bash
 				extractedFile="$extractedFile$lineNumber "
 				for seperatedString in $splitAtSlashWithStar:
 				do
@@ -527,3 +528,24 @@ function _sysinfo() {
 	echo "Memory Usage: $memory_usage"
 	echo "Disk Usage: $disk_usage"
 }
+
+function gitoverwrite() {
+	git fetch origin
+	git reset --hard origin/main
+	git clean -fd
+}
+
+function cats {
+    local iter=1
+    for f in $@
+    do
+        echo $iter: $f
+        cat $f
+        echo ''
+        ((iter++))
+    done
+}
+
+function 		
+
+alias dz='rm *.Identifier'
