@@ -606,3 +606,168 @@ findsym_def() {
         && echo "$f"
       done
 }
+
+od_func() {
+    local bin="$1"
+    local func="$2"
+
+    if [[ -z "$bin" || -z "$func" ]]; then
+        echo "사용법: od_func <바이너리> <함수이름>"
+        echo "예: od_func login_handler.cgi main"
+        echo "예: od_func login_session.cgi get_value_post"
+        return 1
+    fi
+
+    # '<func>:' 라벨부터 시작해서 다음 '<...>:' 라벨 나오기 전까지 출력
+    mips-linux-gnu-objdump -D -EL "$bin" 2>/dev/null \
+    | awk -v f="$func" '
+        $0 ~ "<" f ">:" {p=1}
+        p {print}
+        p && $0 ~ /^0[0-9a-fA-F]+ <[^>]+>:/ && $0 !~ "<" f ">:" {exit}
+    '
+}
+od_addr() {
+    local bin="$1"
+    local addr="$2"
+    local A="${3:-50}"
+    local B="${4:-50}"
+
+    if [[ -z "$bin" || -z "$addr" ]]; then
+        echo "사용법: od_addr <바이너리> <주소/패턴> [A] [B]"
+        echo "예: od_addr login_handler.cgi 400a88 50 50"
+        echo "예: od_addr login_handler.cgi 400a88 100 20"
+        return 1
+    fi
+
+    mips-linux-gnu-objdump -D -EL "$bin" 2>/dev/null \
+    | grep -n -A "$A" -B "$B" -- "$addr"
+}
+find_gp() {
+    if [[ $# -lt 1 ]]; then
+        echo "사용법: find_gp <파일|글롭패턴|디렉토리>"
+        echo "예: find_gp libcgi.so"
+        echo "예: find_gp '*.so*'"
+        echo "예: find_gp .    (현재 디렉토리 내 파일들 대상)"
+        return 1
+    fi
+
+    local target="$1"
+
+    if [[ -d "$target" ]]; then
+        # 디렉토리면 안의 모든 파일 대상
+        find "$target" -type f -print0 2>/dev/null \
+        | while IFS= read -r -d '' f; do
+            readelf -sW "$f" 2>/dev/null \
+            | egrep ' _gp$|__gnu_local_gp' >/dev/null \
+            && { echo "== $f =="; readelf -sW "$f" 2>/dev/null | egrep ' _gp$|__gnu_local_gp'; }
+          done
+    else
+        # 파일/글롭패턴이면 그대로 확장해서 처리
+        for f in $target; do
+            [[ -f "$f" ]] || continue
+            readelf -sW "$f" 2>/dev/null \
+            | egrep ' _gp$|__gnu_local_gp' >/dev/null \
+            && { echo "== $f =="; readelf -sW "$f" 2>/dev/null | egrep ' _gp$|__gnu_local_gp'; }
+        done
+    fi
+}
+
+
+hsd() {
+    if [[ $# -ne 2 ]]; then
+        echo "사용법: hex_sub_dec <hex> <dec>"
+        echo "예: hex_sub_dec 0x10 10"
+        return 1
+    fi
+
+    local hex=${1#0x}
+    local dec=$2
+
+    local result=$(( 0x$hex - dec ))
+
+    printf "dec: %d\nhex: 0x%X\n" "$result" "$result"
+}
+qemu_mips_dbg() {
+    local bin="$1"
+    local rootfs="${2:-$HOME/iptime/extractions/a3004t_kr_12_102(1).bin.extracted/0/a3004t.bin.extracted/35E334/squashfs-root}"
+    local port="${3:-1234}"
+
+    if [[ -z "$bin" ]]; then
+        echo "사용법: qemu_mips_dbg <binary> [rootfs] [port]"
+        return 1
+    fi
+
+    rootfs="$(readlink -f "$rootfs")" || return 1
+    bin="$(readlink -f "$bin")" || return 1
+
+    if [[ ! -e "$bin" ]]; then
+        echo "[!] 바이너리가 없습니다: $bin"
+        return 1
+    fi
+    if [[ ! -d "$rootfs" ]]; then
+        echo "[!] rootfs 디렉터리가 없습니다: $rootfs"
+        return 1
+    fi
+
+    local qemu="qemu-mips"
+    if readelf -h "$bin" 2>/dev/null | grep -qi 'little endian'; then
+        qemu="qemu-mipsel"
+    fi
+
+    local interp="/lib/ld-uClibc.so.0"
+    local interp_host="$rootfs${interp}"
+    local libpath="$rootfs/lib"
+
+    local log="/tmp/qemu_mips_dbg.$(basename "$bin").$port.log"
+    : > "$log"
+
+    echo "[*] qemu:   $qemu"
+    echo "[*] rootfs: $rootfs"
+    echo "[*] bin:    $bin"
+    echo "[*] port:   $port"
+    echo "[*] interp: $interp"
+    echo "[*] log:    $log"
+
+    if [[ ! -e "$interp_host" ]]; then
+        echo "[!] 인터프리터가 rootfs에 없습니다: $interp_host"
+        return 1
+    fi
+
+    # 포트 점유 확인
+    if command -v ss >/dev/null 2>&1 && ss -lnt 2>/dev/null | grep -q ":$port "; then
+        echo "[!] 포트가 이미 사용 중입니다: $port"
+        return 1
+    fi
+
+    # 핵심: 로더를 직접 실행 + library-path 강제 (ld.so.cache 우회)
+    (cd "$rootfs" && \
+        "$qemu" -L "$rootfs" -g "$port" "./lib/ld-uClibc.so.0" --library-path "./lib" "./${bin#$rootfs/}" \
+        2>>"$log") &
+    local qemu_pid=$!
+
+    # 포트 열림 대기 (최대 20초)
+    local ok=0
+    for _ in $(seq 1 200); do
+        kill -0 "$qemu_pid" 2>/dev/null || break
+        if command -v ss >/dev/null 2>&1; then
+            ss -lntp 2>/dev/null | grep -q ":$port " && { ok=1; break; }
+        fi
+        sleep 0.1
+    done
+
+    if [[ "$ok" -ne 1 ]]; then
+        echo "[!] gdb 포트(:$port)가 열리지 않았습니다."
+        echo "---- 최근 로그 ----"
+        tail -n 120 "$log"
+        echo "-------------------"
+        kill "$qemu_pid" >/dev/null 2>&1
+        return 1
+    fi
+
+    gdb-multiarch "$bin" \
+        -ex "set architecture mips" \
+        -ex "set pagination off" \
+        -ex "target remote 127.0.0.1:$port"
+
+    kill "$qemu_pid" >/dev/null 2>&1
+}
