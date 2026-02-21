@@ -590,19 +590,19 @@ check_symbol() {
 
     readelf -Ws "$file" 2>/dev/null | grep -w -- "$symbol"
 }
-
-check_symbol_def() {
-    local file="$1"
+findsym_def() {
+    local path="${1:-..}"
     local symbol="$2"
-    if [[ -z "$file" || -z "$symbol" ]]; then
-        echo "사용법: check_symbol_where <파일> <심볼>"
+    if [[ -z "$symbol" ]]; then
+        echo "사용법: findsym_def [경로] <심볼>"
         return 1
     fi
-    # UND면 참조(미정의), UND가 아니면 보통 정의(또는 공용/약한 심볼 등)
-    readelf -Ws "$file" 2>/dev/null | awk -v s="$symbol" '
-        $8==s {
-            # readelf -Ws 컬럼: Num: Value Size Type Bind Vis Ndx Name
-            # Ndx가 UND면 undefined reference
-            printf "%s\tNdx=%s\tType=%s\tBind=%s\tValue=%s\tSize=%s\n", $8, $7, $4, $5, $2, $3
-        }'
+
+    find "$path" -type f -name "*.so*" -print0 2>/dev/null \
+    | while IFS= read -r -d '' f; do
+        # UND는 제외하고(=정의만)
+        readelf -Ws "$f" 2>/dev/null \
+        | awk -v s="$symbol" '$8==s && $7!="UND" {found=1} END{exit !found}' \
+        && echo "$f"
+      done
 }
